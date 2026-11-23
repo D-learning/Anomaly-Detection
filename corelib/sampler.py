@@ -217,7 +217,7 @@ class MetaGreedyCoresetSampler(BaseSampler):
             self.mode_state.prepare(base_coreset,task_coreset,raw_task_features,raw_task_ids,
                                     getattr(self,'optimization_task_index',-1)+1)
         n_samples = len(task_coreset)
-        if os.environ.get('G_VARIANT') in ('G1','G3'):
+        if os.environ.get('G_VARIANT') == 'G1':
             return self.mode_state.merge_reserved(self,base_coreset,base_sample_ids,task_coreset,task_sample_ids,task_class_labels)
         n_samples_to_delete = n_base_coreset + n_samples - self.coreset_size
 
@@ -512,7 +512,7 @@ class MetaGreedyCoresetSampler(BaseSampler):
         n_samples = min(n_samples, self.coreset_size)
 
         import os
-        if os.environ.get('G_VARIANT') in ('G1','G3'):
+        if os.environ.get('G_VARIANT') == 'G1':
             from corelib.full15_memory import class_candidates
             return class_candidates(features,self.raw_class_labels,n_samples,self.device)
         if os.environ.get('FULL15_VARIANT') in ('F2','F4'):

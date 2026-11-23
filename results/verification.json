@@ -1,19 +1,5 @@
 [
   {
-    "method": "G3",
-    "schedule": "14-1-1",
-    "stages": 2,
-    "exit_code": 0,
-    "fm_verified": true
-  },
-  {
-    "method": "G3",
-    "schedule": "3-3-4",
-    "stages": 5,
-    "exit_code": 0,
-    "fm_verified": true
-  },
-  {
     "method": "G1",
     "schedule": "3-3-4",
     "stages": 5,
@@ -28,13 +14,6 @@
     "fm_verified": true
   },
   {
-    "method": "G3",
-    "schedule": "10-5-1",
-    "stages": 2,
-    "exit_code": 0,
-    "fm_verified": true
-  },
-  {
     "method": "G1",
     "schedule": "10-5-1",
     "stages": 2,
@@ -42,23 +21,9 @@
     "fm_verified": true
   },
   {
-    "method": "G3",
-    "schedule": "1-1-14",
-    "stages": 15,
-    "exit_code": 0,
-    "fm_verified": true
-  },
-  {
     "method": "G1",
     "schedule": "1-1-14",
     "stages": 15,
-    "exit_code": 0,
-    "fm_verified": true
-  },
-  {
-    "method": "G3",
-    "schedule": "10-1-5",
-    "stages": 6,
     "exit_code": 0,
     "fm_verified": true
   },

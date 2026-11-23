@@ -44,7 +44,7 @@ def main():
     if os.environ.get('FULL15_VARIANT') and os.environ.get('FULL15_SMOKE')!='1' and sum(config.incremental_class_nums)!=15:
         raise ValueError('Full15 formal runs must cover exactly fifteen classes')
     if os.environ.get('G_VARIANT'):
-        if os.environ['G_VARIANT'] not in ('G0','G1','G2','G3'):raise ValueError('Unknown G variant')
+        if os.environ['G_VARIANT'] not in ('G0','G1'):raise ValueError('Unknown G variant')
         if config.dataset!='mvtec' or os.environ.get('RB_VARIANT')!='R2' or os.environ.get('OPT_VARIANT')!='Rhier':raise ValueError('R2-next requires mvtec/R2/Rhier')
         if os.environ.get('FULL15_VARIANT'):raise ValueError('G and F variants cannot be combined')
         if sum(config.incremental_class_nums)!=15 and os.environ.get('G_SMOKE')!='1':raise ValueError('Formal G protocols require full15')
@@ -147,7 +147,6 @@ def main():
         mask_paths_all = []
         alt_predictions={name:dict(scores=[],masks=[]) for name in getattr(model,'diagnostic_banks',{})}
         neighbour_rows=[]
-        route_rows=[]
         for data in test_loader:
             image = data['image']
             labels_gt = data['is_anomaly'].numpy().tolist()
@@ -157,11 +156,6 @@ def main():
             mask_paths = data['mask_path']
 
             scores, segmentations  = model.inference(image)
-            if model.g_router is not None:
-                # Ground truth read only AFTER prediction, exclusively for evaluation.
-                for i,predicted in enumerate(model.g_router.last_classes.cpu().tolist()):
-                    route_rows.append(dict(classname=cls[i],true_class=int(data['classlabel'][i]),predicted_class=predicted,
-                        is_anomaly=int(labels_gt[i]),path=image_paths[i]))
             for name,(alt_scores,alt_masks) in getattr(model,'last_diagnostic_predictions',{}).items():
                 alt_predictions[name]['scores'].extend(alt_scores)
                 alt_predictions[name]['masks'].extend(alt_masks)
@@ -184,8 +178,6 @@ def main():
         for name,values in alt_predictions.items():
             alt_results=model.get_metric_results(values['scores'],values['masks'],labels_gt_all,masks_gt_all,class_all)
             model._save_metrics(alt_results,f'diagnostic_{name}_s{step+1}.csv')
-        if route_rows:
-            with open(os.path.join(config.save_path,f'route_s{step+1}.json'),'w') as file:json.dump(route_rows,file)
         if neighbour_rows:
             with open(os.path.join(config.save_path,f'neighbours_s{step+1}.json'),'w') as file:
                 json.dump(neighbour_rows,file)
@@ -377,14 +369,10 @@ def get_argparse():
             'variant':os.environ['G_VARIANT'],'base':'F1/R2',
             'G0':'R2 unchanged, rerun control',
             'G1':'per-class birth compression to final quota; old rows frozen; global inference',
-            'G2':'R2 unchanged memory; image descriptor predicted top1 routing and class-local scoring',
-            'G3':'reserved memory + predicted routing',
             'total_classes_known':15,'prototype_limit':config.coreset_size,
             'quota':'K//15 for all classes, +1 for first K%15 class IDs; unarrived slots remain unused',
-            'router':'4 deterministic FPS exemplars of normalized mean patch descriptors/class; normal train only',
-            'router_input':'image features only; no test class input, no oracle',
-            'scoring':'original squared-L2 nearest-neighbour mean and original image/segmentation aggregation',
-            'persistent_limit':'same 5000-prototype-equivalent bytes as F-series, including router',
+            'scoring':'shared global bank; original squared-L2 nearest-neighbour mean and image/segmentation aggregation',
+            'persistent_limit':'same 5000-prototype-equivalent bytes as F-series, including provenance and R2 metadata',
             'checkpoint_retention':'no new weights','scope':'seed42 structural ablation; no test-driven parameter selection'}
     source_root = os.path.dirname(os.path.abspath(__file__))
     def git_output(args):

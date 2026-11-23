@@ -295,7 +295,7 @@ def continuous_improves(new,old):
 
 def make_memory(variant):
     import os
-    if os.environ.get('G_VARIANT') in ('G1','G3'):
+    if os.environ.get('G_VARIANT') == 'G1':
         from corelib.r2next import ReservedMemory
         return ReservedMemory()
     if os.environ.get('FULL15_VARIANT'):

@@ -43,10 +43,6 @@ class ContCore(nn.Module):
         if self.cseries_variant in ('C0','C1ctrl','C1','C2ctrl','C2','C3','D0','D1','Dgreedy','D2','D2ctrl','D3','M0','M1','M2','M3','Rdiag','Rfix','Rresp','Rhier','Rctrl','Rimage'):
             from corelib.cseries import ProtectionState
             self.cseries=ProtectionState('C2' if self.cseries_variant=='D3' else self.cseries_variant,feature_dim)
-        self.g_router=None
-        if os.environ.get('G_VARIANT') in ('G2','G3'):
-            from corelib.r2next import ImageRouter
-            self.g_router=ImageRouter()
         self.chunk_size = self._get_max_chunk_size(chunk_size)
         self.features = []
         self.sample_ids = []
@@ -194,8 +190,6 @@ class ContCore(nn.Module):
         self.raw_task_class_labels = class_labels
         if getattr(self,'cseries',None) is not None:
             self.cseries.train_center(features,sample_ids)
-        if self.g_router is not None:
-            self.g_router.register(features,sample_ids,class_labels)
         self.sampler.raw_class_labels=class_labels
         self.task_coreset_features, self.task_coreset_sample_ids = self.sampler.run(features, sample_ids, task_coreset=self.task_coreset_features, base_coreset=self.coreset_features)
         import os
@@ -251,8 +245,6 @@ class ContCore(nn.Module):
             self.cseries_memory=self.cseries.memory_audit(self.coreset_features,self.coreset_sample_ids,self.sampler.optimization_task_labels)
             if hasattr(self.sampler,'mode_state'):
                 self.cseries_memory=self.sampler.mode_state.audit(self.coreset_features,self.coreset_sample_ids,self.sampler.optimization_task_labels)
-        if self.g_router is not None:
-            self.cseries_memory=self.g_router.audit(self.cseries_memory)
         self.raw_task_features = None
         self.raw_task_sample_ids = None
         self.raw_task_class_labels=None
@@ -281,11 +273,7 @@ class ContCore(nn.Module):
             features, _, patch_shapes = self._extract_features(images, sample_ids, return_patch_shape=True)
             feature_tensor=features
             self.last_diagnostic_predictions={}
-            if self.g_router is not None:
-                if self.sampler.metric!='L2':raise ValueError('R2-next routed scoring requires squared L2')
-                patch_scores=self.g_router.score(features.reshape(batch_size,-1,self.feature_dim),self.coreset_features,
-                    self.sampler.optimization_class_labels,self.anomaly_scorer.n_nearest_neighbours).flatten().cpu().numpy()
-            elif getattr(self,'cseries',None) is not None and self.cseries.routing:
+            if getattr(self,'cseries',None) is not None and self.cseries.routing:
                 patch_scores=self.cseries.route(features.reshape(batch_size,-1,self.feature_dim),
                     self.coreset_features,self.sampler.optimization_task_labels).flatten().cpu().numpy()
             else:
